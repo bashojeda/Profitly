@@ -26,7 +26,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.profitly.domain.model.AnalyticsSnapshot
+import com.example.profitly.domain.model.ChartPoint
+import com.example.profitly.domain.model.Expense
+import com.example.profitly.domain.model.FinancialSummary
+import com.example.profitly.domain.model.ProductSale
+import com.example.profitly.ui.theme.ProfitlyTheme
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -206,4 +213,52 @@ private fun MetricCard(title: String, value: String) {
 
 private fun currency(value: Double): String {
     return NumberFormat.getCurrencyInstance(Locale.US).format(value)
+}
+
+@Preview(showBackground = true)
+@Composable
+fun DashboardScreenPreview() {
+    val sampleUiState = DashboardUiState(
+        sales = listOf(
+            ProductSale(1, "Widget A", 25.0, 10.0, 100, System.currentTimeMillis()),
+            ProductSale(2, "Gadget B", 50.0, 20.0, 50, System.currentTimeMillis())
+        ),
+        expenses = listOf(
+            Expense(1, "Office Rent", 1000.0, System.currentTimeMillis()),
+            Expense(2, "Internet", 100.0, System.currentTimeMillis())
+        ),
+        analytics = AnalyticsSnapshot(
+            summary = FinancialSummary(
+                totalRevenue = 5000.0,
+                totalCosts = 3100.0,
+                netProfit = 1900.0,
+                profitMarginPercent = 38.0
+            ),
+            salesOverTime = listOf(
+                ChartPoint("Jan", 1000.0),
+                ChartPoint("Feb", 1500.0),
+                ChartPoint("Mar", 1200.0),
+                ChartPoint("Apr", 1300.0)
+            ),
+            profitOverTime = listOf(
+                ChartPoint("Jan", 200.0),
+                ChartPoint("Feb", 500.0),
+                ChartPoint("Mar", 300.0),
+                ChartPoint("Apr", 400.0)
+            )
+        ),
+        insights = listOf(
+            "Increase production of Widget A to meet demand.",
+            "Consider reducing Office Rent expenses."
+        )
+    )
+
+    ProfitlyTheme {
+        DashboardScreen(
+            uiState = sampleUiState,
+            onAddSale = { _, _, _, _ -> },
+            onAddExpense = { _, _ -> },
+            onGenerateInsights = {}
+        )
+    }
 }

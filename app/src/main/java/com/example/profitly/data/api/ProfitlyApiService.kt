@@ -12,12 +12,14 @@ data class CreateSaleRequest(
     val productName: String,
     val sellingPrice: Double,
     val productionCost: Double,
-    val quantitySold: Int
+    val quantitySold: Int,
+    val createdAtMillis: Long
 )
 
 data class CreateExpenseRequest(
     val description: String,
-    val amount: Double
+    val amount: Double,
+    val createdAtMillis: Long
 )
 
 data class ChartsResponse(
@@ -26,24 +28,28 @@ data class ChartsResponse(
 )
 
 interface ProfitlyApiService {
+    @retrofit2.http.Headers("Cache-Control: no-cache")
     @GET("sales")
     suspend fun getSales(): List<ProductSale>
 
     @POST("sales")
     suspend fun createSale(@Body request: CreateSaleRequest): Map<String, Long>
 
+    @retrofit2.http.Headers("Cache-Control: no-cache")
     @GET("expenses")
     suspend fun getExpenses(): List<Expense>
 
     @POST("expenses")
     suspend fun createExpense(@Body request: CreateExpenseRequest): Map<String, Long>
 
-    @GET("summary")
+    @retrofit2.http.Headers("Cache-Control: no-cache")
+    @GET("analytics/summary")
     suspend fun getSummary(): FinancialSummary
 
-    @GET("charts")
+    @retrofit2.http.Headers("Cache-Control: no-cache")
+    @GET("analytics/charts")
     suspend fun getCharts(): ChartsResponse
 
-    @POST("insights")
+    @GET("analytics/insights")
     suspend fun getInsights(): List<String>
 }

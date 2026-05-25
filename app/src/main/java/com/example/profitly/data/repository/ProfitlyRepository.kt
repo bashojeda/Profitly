@@ -24,7 +24,8 @@ class ProfitlyRepository(private val apiService: ProfitlyApiService) {
                 productName = productName,
                 sellingPrice = sellingPrice,
                 productionCost = productionCost,
-                quantitySold = quantitySold
+                quantitySold = quantitySold,
+                createdAtMillis = System.currentTimeMillis()
             )
         )
     }
@@ -37,7 +38,8 @@ class ProfitlyRepository(private val apiService: ProfitlyApiService) {
         apiService.createExpense(
             CreateExpenseRequest(
                 description = description,
-                amount = amount
+                amount = amount,
+                createdAtMillis = System.currentTimeMillis()
             )
         )
     }

@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.profitly.data.repository.ProfitlyRepository
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -17,34 +20,39 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState
 
     init {
-        loadAllData()
+        viewModelScope.launch {
+            loadAllData()
+        }
     }
 
-    private fun loadAllData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingInsights = true) }
-            runCatching {
-                val sales = repository.getSales()
-                val expenses = repository.getExpenses()
-                val analytics = repository.getAnalytics()
-                
-                _uiState.update {
-                    it.copy(
-                        sales = sales,
-                        expenses = expenses,
-                        analytics = analytics,
-                        errorMessage = null
-                    )
-                }
-            }.onFailure { throwable ->
-                _uiState.update { state ->
-                    state.copy(
-                        errorMessage = "Failed to load data: ${throwable.message ?: "Unknown error"}"
-                    )
-                }
+    private suspend fun loadAllData() {
+        _uiState.update { it.copy(isLoadingInsights = true) }
+        
+        coroutineScope {
+            val salesDeferred = async { runCatching { repository.getSales() } }
+            val expensesDeferred = async { runCatching { repository.getExpenses() } }
+            val analyticsDeferred = async { runCatching { repository.getAnalytics() } }
+
+            val salesRes = salesDeferred.await()
+            val expensesRes = expensesDeferred.await()
+            val analyticsRes = analyticsDeferred.await()
+
+            _uiState.update { state ->
+                state.copy(
+                    sales = salesRes.getOrDefault(state.sales),
+                    expenses = expensesRes.getOrDefault(state.expenses),
+                    analytics = analyticsRes.getOrDefault(state.analytics),
+                    errorMessage = when {
+                        salesRes.isFailure -> "Failed to load sales: ${salesRes.exceptionOrNull()?.message}"
+                        expensesRes.isFailure -> "Failed to load expenses: ${expensesRes.exceptionOrNull()?.message}"
+                        analyticsRes.isFailure -> "Failed to load analytics: ${analyticsRes.exceptionOrNull()?.message}"
+                        else -> null
+                    }
+                )
             }
-            _uiState.update { it.copy(isLoadingInsights = false) }
         }
+        
+        _uiState.update { it.copy(isLoadingInsights = false) }
     }
 
     fun addSale(
@@ -54,8 +62,10 @@ class DashboardViewModel(
         quantitySold: Int
     ) {
         viewModelScope.launch {
+            _uiState.update { it.copy(errorMessage = null) }
             runCatching {
                 repository.addSale(productName, sellingPrice, productionCost, quantitySold)
+                delay(1000) // Aumentamos a 1 segundo para dar tiempo al servidor
                 loadAllData()
             }.onFailure { throwable ->
                 _uiState.update { state ->
@@ -67,8 +77,10 @@ class DashboardViewModel(
 
     fun addExpense(description: String, amount: Double) {
         viewModelScope.launch {
+            _uiState.update { it.copy(errorMessage = null) }
             runCatching {
                 repository.addExpense(description, amount)
+                delay(1000) // Aumentamos a 1 segundo para dar tiempo al servidor
                 loadAllData()
             }.onFailure { throwable ->
                 _uiState.update { state ->
